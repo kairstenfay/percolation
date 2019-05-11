@@ -1,69 +1,80 @@
+import edu.princeton.cs.algs4.QuickUnionUF;
+
 import java.util.Arrays;
 
 public class Percolation {
 
+   private int[] id;
    private int[][] grid;
 
-   // create n-by-n grid, with all sites blocked
+   private QuickUnionUF uf;
+
+   // create n-by-n id, with all sites blocked
    public Percolation(int n) {
        if (n <= 0) {
            throw new IllegalArgumentException("n must be greater than zero.");
        }
 
+       id = new int[n * n];
        grid = new int[n][n];
 
-       for (int i = 0; i < n; i++) {
-           grid[i] = new int[n];
-       }
+       uf = new QuickUnionUF(n * n + 2);
+       //
+       // for (int i = 0; i < n * n; i++) {
+       //     id[i] = n;
+       // }
    }
 
-   // open site (row, col) if it is not open already
+   // open site (row, col) if it is not open already (perform union)
    public void open(int row, int col) {
-        validateDimensions(row);
-        validateDimensions(col);
+       validateDimensions(row, col);
+       grid[row][col] = 1;
+       int p = row * grid.length + col + 1;
 
-        grid[row][col] = 1;
+       // edge cases
+       // leftmost column, rightmost column
 
-        // edge cases: top row, bottom row, leftmost column, rightmost column
-       if (row != 0) {  // not the top row
-           grid[row - 1][col] = 1;
+       // connect with space above if open
+       if (row != 0 && isOpen(row - 1, col)) {
+           int q = (row - 1) * grid.length + col + 1;
+           uf.union(p, q);
        }
 
-       if (row != grid.length - 1) {
-           grid[row + 1][col] = 1;
+       // connect with space below if open
+       if (row != grid.length - 1 && isOpen(row + 1, col)) {
+           int q = (row + 1) * grid.length + col + 1;
+           uf.union(p, q);
        }
 
-       if (col != 0) {
-           grid[row][col - 1] = 1;
-       }
 
-       if (col != grid.length - 1) {
-           grid[row][col + 1] = 1;
-       }
+       //
+       // if (col != 0) {
+       //     grid[row][col - 1] = 1;
+       // }
+       //
+       // if (col != id.length - 1) {
+       //     grid[row][col + 1] = 1;
+       // }
    }
 
    // is site (row, col) open?
    public boolean isOpen(int row, int col) {
-       validateDimensions(row);
-       validateDimensions(col);
-
+       validateDimensions(row, col);
        return grid[row][col] == 1;
    }
 
-   // is site (row, col) full?
+   // is site (row, col) full? TODO is this what full really means?
    public boolean isFull(int row, int col) {
-       validateDimensions(row);
-       validateDimensions(col);
-
+       validateDimensions(row, col);
        return grid[row][col] == 0;
    }
 
-   // number of open sites
+   // number of open sites TODO performance
    public int numberOfOpenSites() {
        int cumSum = 0;
 
-       for (int i = 0; i < grid.length; i++) {
-           for (int j = 0; j < grid.length; j++) {
+       for (int i = 0; i < id.length; i++) {
+           for (int j = 0; j < id.length; j++) {
                cumSum += grid[i][j];
            }
        }
@@ -76,9 +87,10 @@ public class Percolation {
    }
 
    // todo
-   private void validateDimensions(int n) {
-        if (n < 0 || n >= grid.length) {
-            throw new IllegalArgumentException(n + " is outside of the prescribed bounds");
+   private void validateDimensions(int row, int col) {
+        if (Math.min(row, col) < 0 || Math.max(row, col) >= grid.length) {
+            throw new IllegalArgumentException("One of your dimensions is "
+                + "outside of the prescribed bounds");
         }
    }
 
@@ -88,16 +100,22 @@ public class Percolation {
            result += Arrays.toString(grid[i]) + "\n";
        }
        return result;
+
    }
 
    // test client (optional)
    public static void main(String[] args) {
-      Percolation perc = new Percolation(5);
+      Percolation perc = new Percolation(3);
+      System.out.println(perc);
 
       // TODO 1, 1 is upper left
+       perc.open(0, 1);
       perc.open(1,1);
       System.out.println(perc);
-      System.out.println(perc.numberOfOpenSites());
+      System.out.println("---------------");
+
+      System.out.println(perc.uf.count());
+      // System.out.println(perc.numberOfOpenSites());
    }
 }
 
