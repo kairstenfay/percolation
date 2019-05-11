@@ -4,8 +4,8 @@ import java.util.Arrays;
 
 public class Percolation {
 
-   private int[] id;
    private int[][] grid;
+   private int open;
 
    private QuickUnionUF uf;
 
@@ -14,83 +14,79 @@ public class Percolation {
        if (n <= 0) {
            throw new IllegalArgumentException("n must be greater than zero.");
        }
-
-       id = new int[n * n];
        grid = new int[n][n];
-
        uf = new QuickUnionUF(n * n + 2);
-       //
-       // for (int i = 0; i < n * n; i++) {
-       //     id[i] = n;
-       // }
    }
 
    // open site (row, col) if it is not open already (perform union)
    public void open(int row, int col) {
-       validateDimensions(row, col);
+       validate(row, col);
        grid[row][col] = 1;
+       open++;
+
        int p = row * grid.length + col + 1;
-
-       // edge cases
-       // leftmost column, rightmost column
-
-       // connect with space above if open
-       if (row != 0 && isOpen(row - 1, col)) {
+       
+       if (row == 0) {  // connect with pseudo space at top
+           uf.union(p, 0);
+       } else if (isOpen(row - 1, col)) {  // connect with space above if open
            int q = (row - 1) * grid.length + col + 1;
            uf.union(p, q);
        }
 
-       // connect with space below if open
-       if (row != grid.length - 1 && isOpen(row + 1, col)) {
+       if (row == grid.length - 1) {  // connect with pseudo space at bottom
+           uf.union(p, grid.length * grid.length + 1);
+       } else if (isOpen(row + 1, col)) {  // connect with space below if open
            int q = (row + 1) * grid.length + col + 1;
            uf.union(p, q);
        }
+       
+       // connect with space to left if open
+       if (col != 0 && isOpen(row, col - 1)) {
+           int q = row * grid.length + (col - 1) + 1;
+           uf.union(p, q);
+       }
 
-
-       //
-       // if (col != 0) {
-       //     grid[row][col - 1] = 1;
-       // }
-       //
-       // if (col != id.length - 1) {
-       //     grid[row][col + 1] = 1;
-       // }
+       // connect with space to right if open
+       if (col != grid.length  - 1 && isOpen(row, col + 1)) {
+           int q = row * grid.length + (col + 1) + 1;
+           uf.union(p, q);
+       }
    }
 
    // is site (row, col) open?
    public boolean isOpen(int row, int col) {
-       validateDimensions(row, col);
+       validate(row, col);
        return grid[row][col] == 1;
    }
 
-   // is site (row, col) full? TODO is this what full really means?
+   // is site (row, col) full? e.g. does it connect to the top pseudo site?
    public boolean isFull(int row, int col) {
-       validateDimensions(row, col);
-       return grid[row][col] == 0;
+       validate(row, col);
+       int p = row * grid.length + col + 1;
+       return grid[row][col] == 1 && uf.connected(p, 0);
    }
 
-   // number of open sites TODO performance
+   // number of open sites
    public int numberOfOpenSites() {
-       int cumSum = 0;
-
-       for (int i = 0; i < id.length; i++) {
-           for (int j = 0; j < id.length; j++) {
-               cumSum += grid[i][j];
-           }
-       }
-       return cumSum;
+       return open;
    }
 
    // does the system percolate?
    public boolean percolates() {
-      return false;
+       return uf.connected(0, grid.length * grid.length);
    }
 
-   // todo
-   private void validateDimensions(int row, int col) {
+    /** Checks that the given dimensions are within the range given to the
+     * constructor upon initiation.
+     *
+     * @param row
+     * @param col
+     * @throws IllegalArgumentException unless row and col are within the bounds.
+     */
+   private void validate(int row, int col) {
         if (Math.min(row, col) < 0 || Math.max(row, col) >= grid.length) {
-            throw new IllegalArgumentException("One of your dimensions is "
-                + "outside of the prescribed bounds");
+            throw new IllegalArgumentException("One of your dimensions "
+                + "(" + row + ", " + col + ") is outside of the prescribed bounds");
         }
    }
 
@@ -105,23 +101,32 @@ public class Percolation {
 
    // test client (optional)
    public static void main(String[] args) {
-      Percolation perc = new Percolation(3);
-      System.out.println(perc);
+       Percolation perc = new Percolation(4);
 
       // TODO 1, 1 is upper left
        perc.open(0, 1);
-      perc.open(1,1);
-      System.out.println(perc);
-      System.out.println("---------------");
+       perc.open(1,1);
+       perc.open(0, 0);
+       System.out.println(perc);
+       System.out.println("openSites: " + perc.numberOfOpenSites());
+       System.out.println("count: " + perc.uf.count());
+       System.out.println("isFull? " + perc.isFull(1,3));
 
-      System.out.println(perc.uf.count());
-      // System.out.println(perc.numberOfOpenSites());
+       perc.open(2, 2);
+       perc.open(2, 1);
+       System.out.println(perc);
+       System.out.println("openSites: " + perc.numberOfOpenSites());
+       System.out.println("count: " + perc.uf.count());
+       System.out.println("isFull? " + perc.isFull(1,3));
+       System.out.println("percolates?: " + perc.percolates());
+
+       perc.open(2, 3);
+       perc.open(3,3);
+       System.out.println(perc);
+       System.out.println("openSites: " + perc.numberOfOpenSites());
+       System.out.println("count: " + perc.uf.count());
+       System.out.println("percolates?: " + perc.percolates());
+
+
    }
 }
-
-
-/*
-Performance requirements.  The constructor should take time proportional to n2;
-all methods should take constant time plus a constant number of calls to the
-union–find methods union(), find(), connected(), and count().
- */
