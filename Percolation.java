@@ -21,6 +21,10 @@ public class Percolation {
    // open site (row, col) if it is not open already (perform union)
    public void open(int row, int col) {
        validate(row, col);
+       if (grid[row][col] == 1) {
+           return;
+       }
+
        grid[row][col] = 1;
        open++;
 
